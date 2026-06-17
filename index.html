@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiaBeat | Diabetes Monitoring & Analytics</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+  <!-- WebMCP tags for Agent tools (optional integration) -->
+</head>
+<body>
+
+  <!-- LOGIN CONTAINER -->
+  <div id="login-container" class="login-layout">
+    <div class="login-card glass-card">
+      <div class="brand" style="margin-bottom: 1.5rem; justify-content: center;">
+        <div class="logo-icon" style="font-size: 2.25rem;">🩸</div>
+        <div class="brand-name" style="font-size: 1.75rem;">DiaBeat<span>.ai</span></div>
+      </div>
+      <h2 class="login-title">Clinical Authentication</h2>
+      <p class="login-subtitle">Unlock local monitoring dashboard & records.</p>
+      
+      <form id="login-screen-form">
+        <div class="form-group" style="margin-bottom: 1rem; text-align: left;">
+          <label for="login-username" class="form-label">Patient / User ID</label>
+          <input type="text" id="login-username" class="form-input" required placeholder="e.g. dooper" value="dooper" style="width: 100%;">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem; text-align: left;">
+          <label for="login-pin" class="form-label">Security PIN</label>
+          <input type="password" id="login-pin" class="form-input" required placeholder="Enter 4-digit PIN" maxlength="4" pattern="[0-9]*" inputmode="numeric" style="width: 100%;">
+          <span class="form-helper">Demo Access: Enter <strong>1234</strong> to login</span>
+        </div>
+        <div id="login-error-msg" class="text-error" style="font-size: 0.85rem; margin-bottom: 1.25rem; display: none; text-align: center;">
+          ✕ Invalid Patient ID or PIN. Please try again.
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Authenticate & Access</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD (Screen view) -->
+  <div id="app-container" class="app-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">🩸</div>
+        <div class="brand-name">DiaBeat<span>.ai</span></div>
+      </div>
+      
+      <div class="patient-card">
+        <div class="avatar">D</div>
+        <div class="patient-info">
+          <span class="patient-name">Dooper</span>
+          <span class="patient-type">Type 1 Diabetes</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button id="nav-btn-dashboard" class="nav-item active" aria-current="page">
+          <svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          Dashboard
+        </button>
+        <button id="nav-btn-logs" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          All Records
+        </button>
+      </nav>
+
+      <div class="action-buttons-group">
+        <button id="open-glucose-modal-btn" class="btn btn-primary btn-icon">
+          <span class="icon">+</span> Log Glucose
+        </button>
+        <button id="open-medication-modal-btn" class="btn btn-secondary btn-icon">
+          <span class="icon">💊</span> Log Medication
+        </button>
+        <button id="trigger-report-btn" class="btn btn-accent btn-icon">
+          <span class="icon">📄</span> Doctor Report
+        </button>
+      </div>
+
+      <div class="sidebar-footer" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span>Vitals Tracked Locally</span>
+          <span class="badge badge-success">Online</span>
+        </div>
+        <button id="logout-btn" class="btn-logout">🔒 Lock Dashboard</button>
+      </div>
+    </aside>
+
+    <!-- Main Dashboard Content Area -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="header-title">
+          <h1>Glycemic Dashboard</h1>
+          <p>Real-time glucose tracking and analytical reports for Dooper.</p>
+        </div>
+        
+        <div class="header-controls">
+          <label for="time-filter" class="sr-only">Filter Timeframe</label>
+          <select id="time-filter" class="select-control">
+            <option value="7">Last 7 Days</option>
+            <option value="14">Last 14 Days</option>
+            <option value="30" selected>Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- Key Analytics Metrics Row -->
+      <section class="metrics-grid" aria-label="Key Performance Indicators">
+        <!-- Average Glucose -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-label">Average Glucose</span>
+            <span class="metric-icon">📈</span>
+          </div>
+          <div class="metric-value-container">
+            <span id="metric-avg-glucose" class="metric-value">--</span>
+            <span class="metric-unit">mg/dL</span>
+          </div>
+          <div class="metric-footer">
+            <span id="metric-avg-status" class="badge">In Range</span>
+          </div>
+        </div>
+
+        <!-- Estimated HbA1c -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-label">Est. HbA1c</span>
+            <span class="metric-icon">🧪</span>
+          </div>
+          <div class="metric-value-container">
+            <span id="metric-hba1c" class="metric-value">--</span>
+            <span class="metric-unit">%</span>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-footer-text">Calculated over selected period</span>
+          </div>
+        </div>
+
+        <!-- Time In Range -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-label">Time In Target Range</span>
+            <span class="metric-icon">🎯</span>
+          </div>
+          <div class="metric-value-container">
+            <span id="metric-time-in-range" class="metric-value">--</span>
+            <span class="metric-unit">%</span>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-footer-text">Target: 70 - 180 mg/dL</span>
+          </div>
+        </div>
+
+        <!-- Hyper / Hypo Glycemia Incidents -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-label">Extreme Incidents</span>
+            <span class="metric-icon">⚠️</span>
+          </div>
+          <div class="metric-value-container split-values">
+            <div class="split-col">
+              <span id="metric-hypo-count" class="metric-sub-value text-error">--</span>
+              <span class="metric-sub-label">Hypos (&lt;70)</span>
+            </div>
+            <div class="split-col">
+              <span id="metric-hyper-count" class="metric-sub-value text-warning">--</span>
+              <span class="metric-sub-label">Hypers (&gt;180)</span>
+            </div>
+          </div>
+          <div class="metric-footer">
+            <span class="metric-footer-text">Requires attention</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chart and Quick Log Row -->
+      <div class="chart-quicklog-row">
+        <!-- Trend Chart Card -->
+        <section class="chart-section glass-card" aria-label="Blood Sugar Trends" style="margin-bottom: 0;">
+          <div class="chart-header">
+            <h2>Glycemic Trends & Range Analysis</h2>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-color bg-hyper"></span>Hyper (&gt;180)</span>
+              <span class="legend-item"><span class="legend-color bg-target"></span>In Target (70-180)</span>
+              <span class="legend-item"><span class="legend-color bg-hypo"></span>Hypo (&lt;70)</span>
+            </div>
+          </div>
+          
+          <div class="chart-container" id="trend-chart-wrapper">
+            <!-- Custom Interactive SVG Chart -->
+            <svg id="trend-chart" width="100%" height="320" viewBox="0 0 800 320" preserveAspectRatio="none" aria-label="Blood sugar trend chart">
+              <defs>
+                <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--color-primary-rgb)" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="var(--color-primary-rgb)" stop-opacity="0.0"/>
+                </linearGradient>
+                <linearGradient id="target-band-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--color-success)" stop-opacity="0.06"/>
+                  <stop offset="100%" stop-color="var(--color-success)" stop-opacity="0.03"/>
+                </linearGradient>
+              </defs>
+              <!-- SVG content dynamically injected by app.js -->
+            </svg>
+            <!-- Dynamic Tooltip -->
+            <div id="chart-tooltip" class="chart-tooltip" style="opacity: 0;"></div>
+          </div>
+        </section>
+
+        <!-- Quick Log Vitals Card -->
+        <section class="quick-log-card glass-card" aria-label="Quick Log Vitals">
+          <div class="card-header">
+            <h2>Quick Log Vitals</h2>
+          </div>
+          <div class="quick-log-tabs">
+            <button id="quick-tab-glucose-btn" class="quick-tab-item active">🩸 Glucose</button>
+            <button id="quick-tab-meds-btn" class="quick-tab-item">💊 Meds</button>
+          </div>
+          
+          <!-- Quick Glucose Form -->
+          <form id="quick-glucose-form" class="quick-form active">
+            <div class="form-group">
+              <label for="quick-glucose-val" class="form-label">Glucose Value (mg/dL)</label>
+              <input type="number" id="quick-glucose-val" class="form-input" min="20" max="600" required placeholder="e.g. 120">
+            </div>
+            <div class="form-group">
+              <label for="quick-glucose-type" class="form-label">Meal Context</label>
+              <select id="quick-glucose-type" class="form-select" required>
+                <option value="Fasting">Fasting</option>
+                <option value="Pre-Meal" selected>Pre-Meal</option>
+                <option value="Post-Meal">Post-Meal</option>
+                <option value="Bedtime">Bedtime</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="quick-glucose-notes" class="form-label">Notes (Optional)</label>
+              <input type="text" id="quick-glucose-notes" class="form-input" placeholder="e.g. felt fine, pre-dinner">
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;">Log Glucose</button>
+          </form>
+
+          <!-- Quick Medication Form -->
+          <form id="quick-medication-form" class="quick-form">
+            <div class="form-group">
+              <label for="quick-med-name" class="form-label">Medication Name</label>
+              <input type="text" id="quick-med-name" class="form-input" list="quick-med-suggestions-list" required placeholder="e.g. Humalog">
+              <datalist id="quick-med-suggestions-list">
+                <option value="Humalog (Rapid Insulin)">
+                <option value="Novolog (Rapid Insulin)">
+                <option value="Lantus (Long-acting Insulin)">
+                <option value="Tresiba (Long-acting Insulin)">
+                <option value="Metformin (Oral)">
+                <option value="Jardiance (Oral)">
+                <option value="Ozempic (Injectable)">
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="quick-med-dose" class="form-label">Dosage</label>
+              <input type="text" id="quick-med-dose" class="form-input" required placeholder="e.g. 6 units, 500 mg">
+            </div>
+            <div class="form-group">
+              <label for="quick-med-notes" class="form-label">Notes (Optional)</label>
+              <input type="text" id="quick-med-notes" class="form-input" placeholder="e.g. taken with breakfast">
+            </div>
+            <button type="submit" class="btn btn-accent" style="margin-top: 0.5rem; width: 100%;">Log Medication</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Split Logs Panel (Recent Readings and Meds) -->
+      <div class="dashboard-split-grids">
+        
+        <!-- Glucose Logs Card -->
+        <section class="records-card glass-card" aria-label="Glucose Records">
+          <div class="card-header">
+            <h2>Glucose Logbook</h2>
+            <button id="view-all-glucose-btn" class="btn-link">View All</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="glucose-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th>Glucose</th>
+                  <th>Notes</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="glucose-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Medication Logs Card -->
+        <section class="records-card glass-card" aria-label="Medication Records">
+          <div class="card-header">
+            <h2>Medication Dosing</h2>
+            <button id="view-all-meds-btn" class="btn-link">View All</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="medication-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Medication</th>
+                  <th>Dose</th>
+                  <th>Notes</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="medication-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- DIALOGS & MODALS -->
+  
+  <!-- Add Glucose Reading Dialog -->
+  <dialog id="glucose-modal" closedby="any" aria-labelledby="glucoseModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="glucoseModalTitle">Log Blood Sugar Reading</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('glucose-modal').close()" aria-label="Close dialog">×</button>
+      </div>
+      <form id="glucose-form" method="dialog">
+        <div class="form-grid">
+          
+          <div class="form-group full-width">
+            <label for="glucose-val" class="form-label">Glucose Value (mg/dL)</label>
+            <input type="number" id="glucose-val" class="form-input" min="20" max="600" required placeholder="e.g. 110">
+            <span class="form-helper">Target range: 70 - 180 mg/dL</span>
+          </div>
+
+          <div class="form-group">
+            <label for="glucose-type" class="form-label">Meal Context / Type</label>
+            <select id="glucose-type" class="form-select" required>
+              <option value="Fasting">Fasting</option>
+              <option value="Pre-Meal" selected>Pre-Meal</option>
+              <option value="Post-Meal">Post-Meal</option>
+              <option value="Bedtime">Bedtime</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="glucose-time" class="form-label">Date & Time</label>
+            <input type="datetime-local" id="glucose-time" class="form-input" required>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="glucose-notes" class="form-label">Notes</label>
+            <textarea id="glucose-notes" class="form-input form-textarea" placeholder="Describe symptoms, foods eaten, activities, or general feeling..."></textarea>
+          </div>
+          
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-text" onclick="document.getElementById('glucose-modal').close()">Cancel</button>
+          <button type="submit" id="save-glucose-btn" class="btn btn-primary">Save Reading</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Add Medication Dialog -->
+  <dialog id="medication-modal" closedby="any" aria-labelledby="medicationModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="medicationModalTitle">Log Medication Administration</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('medication-modal').close()" aria-label="Close dialog">×</button>
+      </div>
+      <form id="medication-form" method="dialog">
+        <div class="form-grid">
+          
+          <div class="form-group">
+            <label for="med-name" class="form-label">Medication Name</label>
+            <input type="text" id="med-name" class="form-input" list="medication-suggestions" required placeholder="e.g. Humalog">
+            <datalist id="medication-suggestions">
+              <option value="Humalog (Rapid Insulin)">
+              <option value="Novolog (Rapid Insulin)">
+              <option value="Lantus (Long-acting Insulin)">
+              <option value="Tresiba (Long-acting Insulin)">
+              <option value="Metformin (Oral)">
+              <option value="Jardiance (Oral)">
+              <option value="Ozempic (Injectable)">
+            </datalist>
+          </div>
+
+          <div class="form-group">
+            <label for="med-dose" class="form-label">Dosage (units / mg)</label>
+            <input type="text" id="med-dose" class="form-input" required placeholder="e.g. 6 units, 500 mg">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="med-time" class="form-label">Date & Time Taken</label>
+            <input type="datetime-local" id="med-time" class="form-input" required>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="med-notes" class="form-label">Notes</label>
+            <textarea id="med-notes" class="form-input form-textarea" placeholder="e.g. Taken with dinner, pre-meal correction, etc."></textarea>
+          </div>
+          
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-text" onclick="document.getElementById('medication-modal').close()">Cancel</button>
+          <button type="submit" id="save-medication-btn" class="btn btn-primary">Save Dose</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Dynamic Details Viewer Modal (For full logs view) -->
+  <dialog id="all-records-modal" closedby="any" aria-labelledby="allRecordsModalTitle">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="allRecordsModalTitle">Complete Patient Records</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('all-records-modal').close()" aria-label="Close dialog">×</button>
+      </div>
+      <div class="all-records-tabs">
+        <button id="tab-glucose-btn" class="tab-item active">Glucose History</button>
+        <button id="tab-meds-btn" class="tab-item">Medication History</button>
+      </div>
+      <div id="tab-content-glucose" class="tab-pane active">
+        <div class="table-container modal-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Glucose Value</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="modal-glucose-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="tab-content-meds" class="tab-pane">
+        <div class="table-container modal-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Medication</th>
+                <th>Dose</th>
+                <th>Notes</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="modal-meds-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('all-records-modal').close()">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Doctor Report Preview Modal (Print-focused overlay screen helper) -->
+  <dialog id="report-config-modal" closedby="any" aria-labelledby="reportModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="reportModalTitle">Prepare Doctor Report</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('report-config-modal').close()" aria-label="Close dialog">×</button>
+      </div>
+      <form id="report-config-form">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="report-doctor-name" class="form-label">Doctor's Name</label>
+            <input type="text" id="report-doctor-name" class="form-input" value="Dr. Smith" required>
+          </div>
+          <div class="form-group">
+            <label for="report-range" class="form-label">Report Period</label>
+            <select id="report-range" class="form-select">
+              <option value="7">Last 7 Days</option>
+              <option value="14">Last 14 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="report-custom-notes" class="form-label">Personal Note for Doctor</label>
+            <input type="text" id="report-custom-notes" class="form-input" placeholder="e.g. Experiencing morning spikes...">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-text" onclick="document.getElementById('report-config-modal').close()">Cancel</button>
+          <button type="submit" class="btn btn-accent btn-icon">
+            <span>🖨️</span> Print & Export PDF
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- DOCTOR REPORT PRINT CONTAINER (Hidden on screen via CSS, shown on print) -->
+  <div id="print-report" class="print-only">
+    <!-- Header -->
+    <header class="print-header">
+      <div class="print-brand-row">
+        <div class="print-brand">🩸 DiaBeat Report</div>
+        <div class="print-date" id="print-generation-date">Generated: --</div>
+      </div>
+      <div class="print-title-row">
+        <h1>Patient Glycemic Profile</h1>
+        <p>Comprehensive monitoring & therapy report prepared for Dooper's care team.</p>
+      </div>
+      <div class="print-patient-meta">
+        <div class="meta-item"><strong>Patient:</strong> <span id="print-patient-name">Dooper</span></div>
+        <div class="meta-item"><strong>Physician:</strong> <span id="print-physician-name">Dr. Smith</span></div>
+        <div class="meta-item"><strong>Diagnosis:</strong> <span>Type 1 Diabetes Mellitus</span></div>
+        <div class="meta-item"><strong>Reporting Period:</strong> <span id="print-report-period">--</span></div>
+      </div>
+    </header>
+
+    <!-- Report Notes -->
+    <section class="print-section" id="print-notes-section" style="display: none;">
+      <h3>Patient Notes / Clinical Observations</h3>
+      <p id="print-custom-notes-val" class="print-notes-box">--</p>
+    </section>
+
+    <!-- Summary Metrics Grid -->
+    <section class="print-section">
+      <h3>Clinical Glycemic Summary</h3>
+      <div class="print-metrics-grid">
+        <div class="print-metric-box">
+          <span class="pm-label">Average Blood Sugar</span>
+          <span class="pm-value"><span id="print-avg-glucose">--</span> <span class="pm-unit">mg/dL</span></span>
+          <span class="pm-sub" id="print-avg-eval">--</span>
+        </div>
+        <div class="print-metric-box">
+          <span class="pm-label">Estimated HbA1c</span>
+          <span class="pm-value"><span id="print-hba1c-val">--</span> <span class="pm-unit">%</span></span>
+          <span class="pm-sub">Derived from avg glucose</span>
+        </div>
+        <div class="print-metric-box">
+          <span class="pm-label">Time In Range (TIR)</span>
+          <span class="pm-value"><span id="print-tir">--</span> <span class="pm-unit">%</span></span>
+          <span class="pm-sub">Target: 70 - 180 mg/dL</span>
+        </div>
+        <div class="print-metric-box">
+          <span class="pm-label">Excursions Detected</span>
+          <span class="pm-value-split">
+            <span class="text-error"><span id="print-hypo-count">0</span> Lows</span>
+            <span class="text-warning"><span id="print-hyper-count">0</span> Highs</span>
+          </span>
+          <span class="pm-sub">Urgent thresholds crossed</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Print Chart -->
+    <section class="print-section no-break">
+      <h3>Glycemic Trends</h3>
+      <div class="print-chart-container">
+        <!-- SVG will be cloned and inserted here during report compilation -->
+        <div id="print-chart-placeholder"></div>
+      </div>
+    </section>
+
+    <!-- Combined Log table -->
+    <section class="print-section">
+      <h3>Chronological Logbook (Readings & Medications)</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Type</th>
+            <th>Reading / Dosage</th>
+            <th>Status / Context</th>
+            <th>Notes & Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="print-logs-body">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Sign-off Block -->
+    <footer class="print-footer-signature no-break">
+      <div class="signature-row">
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <p>Patient Signature (Dooper)</p>
+        </div>
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <p>Dr. <span id="print-physician-sig-name">Smith</span>, MD</p>
+        </div>
+      </div>
+      <p class="disclaimer">Disclaimer: This report was compiled automatically from self-logged data and is intended for review by qualified medical professionals. It should not be used as the sole basis for therapy adjustments without consulting a doctor.</p>
+    </footer>
+  </div>
+
+  <!-- Main JavaScript App -->
+  <script src="app.js" type="module"></script>
+</body>
+</html>
