@@ -1288,3 +1288,7 @@ dialog::backdrop {
   border-color: var(--color-error);
   box-shadow: 0 0 10px rgba(255, 82, 82, 0.15);
 }
+
+#print-generation-date {
+  display: none !important;
+}
