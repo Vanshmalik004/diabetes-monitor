@@ -696,7 +696,10 @@ function compileAndPrintReport(doctorName, timeframeDays, customNotes) {
   const reportPeriodText = `${cutoffDate.toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'})} - ${new Date().toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'})}`;
   
   // 1. Populate Report Header Info
-  document.getElementById('print-generation-date').textContent = `Generated: ${new Date().toLocaleString()}`;
+  const printGenDate = document.getElementById('print-generation-date');
+  if (printGenDate) {
+    printGenDate.textContent = `Generated: ${new Date().toLocaleString()}`;
+  }
   document.getElementById('print-physician-name').textContent = doctorName;
   document.getElementById('print-physician-sig-name').textContent = doctorName;
   document.getElementById('print-report-period').textContent = reportPeriodText;
