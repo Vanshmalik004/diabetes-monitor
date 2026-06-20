@@ -604,6 +604,8 @@ body {
   fill: var(--color-bg);
   stroke-width: 3;
   cursor: pointer;
+  transform-origin: center;
+  transform-box: fill-box;
   transition: transform 0.2s ease, stroke-width 0.2s ease;
 }
 
@@ -619,6 +621,8 @@ body {
 /* SVG Med Marker */
 .med-marker {
   cursor: pointer;
+  transform-origin: center;
+  transform-box: fill-box;
   transition: transform 0.2s ease;
 }
 .med-marker:hover {

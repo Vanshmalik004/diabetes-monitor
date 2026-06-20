@@ -241,6 +241,21 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
   const elementsToRemove = svg.querySelectorAll('rect:not(defs rect), path, circle, g, text');
   elementsToRemove.forEach(el => el.remove());
 
+  // Determine dynamic size based on clientWidth to prevent blurriness/stretching
+  const rect = svg.getBoundingClientRect();
+  const dynamicWidth = rect.width || 800;
+  const dynamicHeight = rect.height || 320;
+
+  // Update viewBox of SVG to match exactly to eliminate stretching and blurring
+  svg.setAttribute("viewBox", `0 0 ${dynamicWidth} ${dynamicHeight}`);
+
+  // Create a local configuration to override CHART_CONFIG width/height
+  const localConfig = {
+    ...CHART_CONFIG,
+    width: dynamicWidth,
+    height: dynamicHeight
+  };
+
   // Filter and sort readings chronologically
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - timeframeDays);
@@ -252,8 +267,8 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
   if (readings.length === 0) {
     // Show Empty message
     const emptyText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    emptyText.setAttribute("x", CHART_CONFIG.width / 2);
-    emptyText.setAttribute("y", CHART_CONFIG.height / 2);
+    emptyText.setAttribute("x", localConfig.width / 2);
+    emptyText.setAttribute("y", localConfig.height / 2);
     emptyText.setAttribute("text-anchor", "middle");
     emptyText.setAttribute("fill", "var(--color-text-muted)");
     emptyText.setAttribute("font-size", "14");
@@ -264,20 +279,20 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
 
   // Coordinate Conversion Helper Functions
   const getX = (timestamp, minTime, maxTime) => {
-    const availableWidth = CHART_CONFIG.width - CHART_CONFIG.paddingLeft - CHART_CONFIG.paddingRight;
+    const availableWidth = localConfig.width - localConfig.paddingLeft - localConfig.paddingRight;
     if (minTime === maxTime) {
-      return CHART_CONFIG.paddingLeft + availableWidth / 2;
+      return localConfig.paddingLeft + availableWidth / 2;
     }
     const ratio = (timestamp - minTime) / (maxTime - minTime);
-    return CHART_CONFIG.paddingLeft + ratio * availableWidth;
+    return localConfig.paddingLeft + ratio * availableWidth;
   };
 
   const getY = (value) => {
-    const availableHeight = CHART_CONFIG.height - CHART_CONFIG.paddingTop - CHART_CONFIG.paddingBottom;
-    const clampedValue = Math.max(CHART_CONFIG.yMin, Math.min(CHART_CONFIG.yMax, value));
-    const ratio = (clampedValue - CHART_CONFIG.yMin) / (CHART_CONFIG.yMax - CHART_CONFIG.yMin);
+    const availableHeight = localConfig.height - localConfig.paddingTop - localConfig.paddingBottom;
+    const clampedValue = Math.max(localConfig.yMin, Math.min(localConfig.yMax, value));
+    const ratio = (clampedValue - localConfig.yMin) / (localConfig.yMax - localConfig.yMin);
     // SVG coordinates increase downwards, so invert y coordinates
-    return CHART_CONFIG.height - CHART_CONFIG.paddingBottom - ratio * availableHeight;
+    return localConfig.height - localConfig.paddingBottom - ratio * availableHeight;
   };
 
   const timestamps = readings.map(r => new Date(r.time).getTime());
@@ -290,9 +305,9 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
   const bandHeight = targetMinY - targetMaxY;
 
   const band = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  band.setAttribute("x", CHART_CONFIG.paddingLeft);
+  band.setAttribute("x", localConfig.paddingLeft);
   band.setAttribute("y", targetMaxY);
-  band.setAttribute("width", CHART_CONFIG.width - CHART_CONFIG.paddingLeft - CHART_CONFIG.paddingRight);
+  band.setAttribute("width", localConfig.width - localConfig.paddingLeft - localConfig.paddingRight);
   band.setAttribute("height", bandHeight);
   band.setAttribute("class", "chart-target-range-band");
   svg.appendChild(band);
@@ -302,9 +317,9 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
   limits.forEach(limitVal => {
     const yVal = getY(limitVal);
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", CHART_CONFIG.paddingLeft);
+    line.setAttribute("x1", localConfig.paddingLeft);
     line.setAttribute("y1", yVal);
-    line.setAttribute("x2", CHART_CONFIG.width - CHART_CONFIG.paddingRight);
+    line.setAttribute("x2", localConfig.width - localConfig.paddingRight);
     line.setAttribute("y2", yVal);
     line.setAttribute("class", "chart-target-limit-line");
     svg.appendChild(line);
@@ -317,16 +332,16 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
     
     // Grid Line
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", CHART_CONFIG.paddingLeft);
+    line.setAttribute("x1", localConfig.paddingLeft);
     line.setAttribute("y1", yVal);
-    line.setAttribute("x2", CHART_CONFIG.width - CHART_CONFIG.paddingRight);
+    line.setAttribute("x2", localConfig.width - localConfig.paddingRight);
     line.setAttribute("y2", yVal);
     line.setAttribute("class", "chart-grid-line");
     svg.appendChild(line);
 
     // Label Text
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("x", CHART_CONFIG.paddingLeft - 10);
+    text.setAttribute("x", localConfig.paddingLeft - 10);
     text.setAttribute("y", yVal + 4);
     text.setAttribute("class", "chart-axis-text");
     text.textContent = val;
@@ -347,16 +362,16 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
     // Grid Line
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", xVal);
-    line.setAttribute("y1", CHART_CONFIG.paddingTop);
+    line.setAttribute("y1", localConfig.paddingTop);
     line.setAttribute("x2", xVal);
-    line.setAttribute("y2", CHART_CONFIG.height - CHART_CONFIG.paddingBottom);
+    line.setAttribute("y2", localConfig.height - localConfig.paddingBottom);
     line.setAttribute("class", "chart-grid-line");
     svg.appendChild(line);
 
     // Label
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.setAttribute("x", xVal);
-    text.setAttribute("y", CHART_CONFIG.height - CHART_CONFIG.paddingBottom + 20);
+    text.setAttribute("y", localConfig.height - localConfig.paddingBottom + 20);
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("fill", "var(--color-text-muted)");
     text.setAttribute("font-size", "10");
@@ -368,25 +383,25 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
   // 5. Draw Axis Lines
   // Bottom horizontal axis
   const xAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  xAxis.setAttribute("x1", CHART_CONFIG.paddingLeft);
-  xAxis.setAttribute("y1", CHART_CONFIG.height - CHART_CONFIG.paddingBottom);
-  xAxis.setAttribute("x2", CHART_CONFIG.width - CHART_CONFIG.paddingRight);
-  xAxis.setAttribute("y2", CHART_CONFIG.height - CHART_CONFIG.paddingBottom);
+  xAxis.setAttribute("x1", localConfig.paddingLeft);
+  xAxis.setAttribute("y1", localConfig.height - localConfig.paddingBottom);
+  xAxis.setAttribute("x2", localConfig.width - localConfig.paddingRight);
+  xAxis.setAttribute("y2", localConfig.height - localConfig.paddingBottom);
   xAxis.setAttribute("class", "chart-axis-line");
   svg.appendChild(xAxis);
 
   // Left vertical axis
   const yAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  yAxis.setAttribute("x1", CHART_CONFIG.paddingLeft);
-  yAxis.setAttribute("y1", CHART_CONFIG.paddingTop);
-  yAxis.setAttribute("x2", CHART_CONFIG.paddingLeft);
-  yAxis.setAttribute("y2", CHART_CONFIG.height - CHART_CONFIG.paddingBottom);
+  yAxis.setAttribute("x1", localConfig.paddingLeft);
+  yAxis.setAttribute("y1", localConfig.paddingTop);
+  yAxis.setAttribute("x2", localConfig.paddingLeft);
+  yAxis.setAttribute("y2", localConfig.height - localConfig.paddingBottom);
   yAxis.setAttribute("class", "chart-axis-line");
   svg.appendChild(yAxis);
 
   // 6. Draw Trend Line and Under-Line Shaded Area
   let linePathPoints = "";
-  let areaPathPoints = `M ${getX(timestamps[0], minTime, maxTime)} ${CHART_CONFIG.height - CHART_CONFIG.paddingBottom} `;
+  let areaPathPoints = `M ${getX(timestamps[0], minTime, maxTime)} ${localConfig.height - localConfig.paddingBottom} `;
 
   readings.forEach((r, idx) => {
     const t = new Date(r.time).getTime();
@@ -401,7 +416,7 @@ function drawTrendChart(timeframeDays, targetSvgId = 'trend-chart') {
     areaPathPoints += `L ${x} ${y} `;
     
     if (idx === readings.length - 1) {
-      areaPathPoints += `L ${x} ${CHART_CONFIG.height - CHART_CONFIG.paddingBottom} Z`;
+      areaPathPoints += `L ${x} ${localConfig.height - localConfig.paddingBottom} Z`;
     }
   });
 
@@ -717,9 +732,13 @@ function compileAndPrintReport(doctorName, timeframeDays, customNotes) {
   const printSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   printSvg.setAttribute("width", "100%");
   printSvg.setAttribute("height", "220");
-  printSvg.setAttribute("viewBox", "0 0 800 320");
+  
+  // Set viewBox to match the screen chart to maintain coordinate systems correctly
+  const screenSvg = document.getElementById('trend-chart');
+  const viewBoxVal = screenSvg ? screenSvg.getAttribute('viewBox') : "0 0 800 320";
+  printSvg.setAttribute("viewBox", viewBoxVal);
   printSvg.setAttribute("preserveAspectRatio", "none");
-  printSvg.innerHTML = document.getElementById('trend-chart').innerHTML;
+  printSvg.innerHTML = screenSvg ? screenSvg.innerHTML : '';
   
   // Clean up any dynamic cursor events / hover dots from cloned SVG
   const dots = printSvg.querySelectorAll('.chart-dot');
@@ -1121,6 +1140,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+  });
+
+  // Handle sidebar navigation clicking
+  const navBtnDashboard = document.getElementById('nav-btn-dashboard');
+  const navBtnLogs = document.getElementById('nav-btn-logs');
+  const allRecordsModal = document.getElementById('all-records-modal');
+
+  if (navBtnLogs && allRecordsModal) {
+    navBtnLogs.addEventListener('click', () => {
+      if (navBtnDashboard) navBtnDashboard.classList.remove('active');
+      navBtnLogs.classList.add('active');
+      renderAllRecordsModal();
+      document.getElementById('tab-glucose-btn').click();
+      allRecordsModal.showModal();
+    });
+  }
+
+  if (navBtnDashboard && allRecordsModal) {
+    navBtnDashboard.addEventListener('click', () => {
+      if (allRecordsModal.open) {
+        allRecordsModal.close();
+      }
+    });
+  }
+
+  if (allRecordsModal) {
+    allRecordsModal.addEventListener('close', () => {
+      if (navBtnDashboard) navBtnDashboard.classList.add('active');
+      if (navBtnLogs) navBtnLogs.classList.remove('active');
+    });
+  }
+
+  // Handle window resizing to keep chart crisp and scaled correctly
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (sessionStorage.getItem('diabeat_logged_in') === 'true') {
+        const timeframe = parseInt(timeFilter.value) || 30;
+        drawTrendChart(timeframe);
+      }
+    }, 150); // Debounce to prevent performance hits
   });
 
   // Render initial dashboard view
